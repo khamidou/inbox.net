@@ -112,7 +112,7 @@ namespace inbox_net
             return await DeserializeObjectAsync<IEnumerable<Thread>>(json);
         }
 
-        public async Task<Thread> UpdateThreadTags(string thread_id, string[] add_tags)
+        public async Task<Thread> UpdateThreadTags(string thread_id, params string[] add_tags)
         {
             List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
             parameters.Add(new KeyValuePair<string, string>("add_tags", StringsToJsonArray(add_tags)));
@@ -137,80 +137,58 @@ namespace inbox_net
 
         private async Task<Thread> SendUpdateTagsRequest(string thread_id, List<KeyValuePair<string,string>> parameters)
         {
-            string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Thread, this.Namespace, thread_id)), GenerateRequestBody(parameters));
+            string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Thread, this.Namespace, thread_id)), GenerateRequestBody(parameters, false));
             return await DeserializeObjectAsync<Thread>(json);
         }
        
 
 
 
-        private List<KeyValuePair<string,string>> ValidateGetThreadsParams(string subject = null, string any_email = null, string to = null, string from = null, string cc = null,
-                                                          string bcc = null, string tag = null, string filename = null, int limit = 100, int offset = 0, int last_message_before = 0, 
-                                                          int last_message_after = 0, int started_before = 0, int started_after = 0)
-        {
-            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
-            if (subject != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("subject", subject));
-            }
-            if (any_email != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("any_email", any_email));
-            }
-            if (to != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("to", to));
-            }
-            if (from != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("from", from));
-            }
-            if (cc != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("cc", cc));
-            }
-            if (bcc != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("bcc", bcc));
-            }
-            if (tag != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("tag", tag));
-            }
-            if (filename != null)
-            {
-                parameters.Add(new KeyValuePair<string, string>("filename", filename));
-            }
-            if (limit != 100)
-            {
-                parameters.Add(new KeyValuePair<string, string>("limit", limit.ToString()));
-            }
-            if (offset != 0)
-            {
-                parameters.Add(new KeyValuePair<string, string>("offset", offset.ToString()));
-            }
-            if (last_message_before != 0)
-            {
-                parameters.Add(new KeyValuePair<string, string>("last_message_before", last_message_before.ToString()));
-            }
-            if (last_message_after != 0)
-            {
-                parameters.Add(new KeyValuePair<string, string>("last_message_after", last_message_after.ToString()));
-            }
-            if (started_before != 0)
-            {
-                parameters.Add(new KeyValuePair<string, string>("started_before", started_before.ToString()));
-            }
-            if (started_after != 0)
-            {
-                parameters.Add(new KeyValuePair<string, string>("started_after", started_after.ToString()));
-            }
-            return parameters;
-        }
+        
 
 #endregion
 
+#region Messages
 
+        public async Task<Message> GetMessage(string message_id)
+        {
+            string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Message, this.Namespace, message_id)));
+            return await DeserializeObjectAsync<Message>(json);
+        }
+
+        public async Task<IEnumerable<Message>> GetMessages(string thread_id = null, string subject = null, string any_email = null, string to = null, string from = null, string cc = null,
+                                                          string bcc = null, string tag = null, string filename = null, int limit = 100, int offset = 0, int last_message_before = 0,
+                                                          int last_message_after = 0, int started_before = 0, int started_after = 0)
+        {
+            List<KeyValuePair<string, string>> parameters = ValidateGetMessagesParams(thread_id, subject, any_email, to, from, cc, bcc, tag, filename, limit, offset, last_message_before, last_message_after, started_before, started_after);
+            string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Messages, this.Namespace), parameters));
+            return await DeserializeObjectAsync<IEnumerable<Message>>(json);
+        }
+
+        public async Task<Message> MarkMessageAsRead(string message_id)
+        {
+            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+            parameters.Add(new KeyValuePair<string, string>("unread", "false"));
+            return await SendUpdateStatusRequest(message_id, parameters);
+        }
+
+        public async Task<Message> MarkMessageAsUnread(string message_id)
+        {
+            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+            parameters.Add(new KeyValuePair<string, string>("unread", "true"));
+            return await SendUpdateStatusRequest(message_id, parameters);
+        }
+
+        private async Task<Message> SendUpdateStatusRequest(string message_id, List<KeyValuePair<string, string>> parameters)
+        {
+            string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Message, this.Namespace, message_id)), GenerateRequestBody(parameters, false));
+            return await DeserializeObjectAsync<Message>(json);
+        }
+
+
+#endregion
+
+#region HttpHelperMethods
 
         private async Task<string> HttpGet(string callUri)
         {
@@ -287,7 +265,7 @@ namespace inbox_net
             return sb.ToString();
         }
 
-        private string GenerateRequestBody(IEnumerable<KeyValuePair<string, string>> parameters)
+        private string GenerateRequestBody(IEnumerable<KeyValuePair<string, string>> parameters, bool withQuotesAroundValue = true)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("{");
@@ -295,7 +273,7 @@ namespace inbox_net
             {
                 foreach (var item in parameters)
                 {
-                    if (item.Value[0] == '[' && item.Value[item.Value.Length - 1] == ']')
+                    if (!withQuotesAroundValue)
                     {
                         sb.AppendLine(string.Format("    \"{0}\": {1},", item.Key, item.Value));
                     }
@@ -310,6 +288,142 @@ namespace inbox_net
             sb.Append("}");
             return sb.ToString();
         }
+
+        private List<KeyValuePair<string, string>> ValidateGetThreadsParams(string subject = null, string any_email = null, string to = null, string from = null, string cc = null,
+                                                          string bcc = null, string tag = null, string filename = null, int limit = 100, int offset = 0, int last_message_before = 0,
+                                                          int last_message_after = 0, int started_before = 0, int started_after = 0)
+        {
+            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+            if (subject != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("subject", subject));
+            }
+            if (any_email != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("any_email", any_email));
+            }
+            if (to != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("to", to));
+            }
+            if (from != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("from", from));
+            }
+            if (cc != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("cc", cc));
+            }
+            if (bcc != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("bcc", bcc));
+            }
+            if (tag != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("tag", tag));
+            }
+            if (filename != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("filename", filename));
+            }
+            if (limit != 100)
+            {
+                parameters.Add(new KeyValuePair<string, string>("limit", limit.ToString()));
+            }
+            if (offset != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("offset", offset.ToString()));
+            }
+            if (last_message_before != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("last_message_before", last_message_before.ToString()));
+            }
+            if (last_message_after != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("last_message_after", last_message_after.ToString()));
+            }
+            if (started_before != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("started_before", started_before.ToString()));
+            }
+            if (started_after != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("started_after", started_after.ToString()));
+            }
+            return parameters;
+        }
+
+        private List<KeyValuePair<string, string>> ValidateGetMessagesParams(string thread_id = null, string subject = null, string any_email = null, string to = null, string from = null, string cc = null,
+                                                          string bcc = null, string tag = null, string filename = null, int limit = 100, int offset = 0, int last_message_before = 0,
+                                                          int last_message_after = 0, int started_before = 0, int started_after = 0)
+        {
+            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+            if (thread_id != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("thread_id", thread_id));
+            }
+            if (subject != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("subject", subject));
+            }
+            if (any_email != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("any_email", any_email));
+            }
+            if (to != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("to", to));
+            }
+            if (from != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("from", from));
+            }
+            if (cc != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("cc", cc));
+            }
+            if (bcc != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("bcc", bcc));
+            }
+            if (tag != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("tag", tag));
+            }
+            if (filename != null)
+            {
+                parameters.Add(new KeyValuePair<string, string>("filename", filename));
+            }
+            if (limit != 100)
+            {
+                parameters.Add(new KeyValuePair<string, string>("limit", limit.ToString()));
+            }
+            if (offset != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("offset", offset.ToString()));
+            }
+            if (last_message_before != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("last_message_before", last_message_before.ToString()));
+            }
+            if (last_message_after != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("last_message_after", last_message_after.ToString()));
+            }
+            if (started_before != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("started_before", started_before.ToString()));
+            }
+            if (started_after != 0)
+            {
+                parameters.Add(new KeyValuePair<string, string>("started_after", started_after.ToString()));
+            }
+            return parameters;
+        }
+
+#endregion
+
+#region Json Helper Methods
 
         private string StringsToJsonArray(string[] strings)
         {
@@ -331,6 +445,8 @@ namespace inbox_net
             }
             return default(T);
         }
+
+#endregion
 
     }
 }

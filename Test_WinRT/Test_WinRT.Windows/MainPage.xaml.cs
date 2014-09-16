@@ -38,12 +38,23 @@ namespace Test_WinRT
             List<Tag> tags = new List<Tag>(await client.GetTags());
             //Tag tag = await client.NewCustomTag("TestInboxApp");
             //Tag tag = await client.GetTag("InboxApp");
-            Tag tag = tags.Where(t => t.Name == "TestInboxApp").First();
+            //Tag tag = tags.Where(t => t.Name == "TestInboxApp").First();
             //Tag tag2 = await client.RenameCustomTag(tag.ID, "Other Test");
-            List<Thread> threads = new List<Thread>(await client.GetThreads(tag: CanonicalTags.Inbox));
-            string[] add_tags = { tag.Name };
-            string[] remove_tags = { threads[0].Tags[0].Name };
-            await client.UpdateThreadTags(threads[0].ID, add_tags);
+            //List<Thread> threads = new List<Thread>(await client.GetThreads(tag: CanonicalTags.Inbox));
+            //string[] add_tags = { tag.Name };
+            //string[] remove_tags = { threads[0].Tags[0].Name };
+            //await client.UpdateThreadTags(threads[0].ID, "test", "test2");
+            IEnumerable<Message> messages = await client.GetMessages(tag: CanonicalTags.Inbox, limit: 5);
+            Message message = null;
+            Message mess = messages.First();
+            if (mess.Unread)
+            {
+                message = await client.MarkMessageAsRead(mess.ID);
+            }
+            else
+            {
+                message = await client.MarkMessageAsUnread(mess.ID);
+            }
         }
 
 

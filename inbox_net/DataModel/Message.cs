@@ -38,7 +38,7 @@ namespace inbox_net.DataModel
         [JsonProperty("date")]
         public int Date { get; set; }
 
-        [JsonProperty("thread")]
+        [JsonProperty("thread_id")]
         public string Thread_ID { get; set; }
 
         [JsonProperty("files")]
@@ -49,6 +49,9 @@ namespace inbox_net.DataModel
 
         [JsonProperty("body")]
         public string Body { get; set; }
+
+        [JsonProperty("unread")]
+        public bool Unread { get; set; }
 
         public override string ToString()
         {
