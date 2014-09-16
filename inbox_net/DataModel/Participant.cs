@@ -17,5 +17,9 @@ namespace inbox_net.DataModel
         [JsonProperty("email")]
         public string Email_Address { get; set; }
 
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", Name, Email_Address);
+        }
     }
 }

@@ -35,5 +35,10 @@ namespace inbox_net.DataModel
         [JsonProperty("version")]
         public string Version { get; set; }
 
+
+        public override string ToString()
+        {
+            return Subject;
+        }
     }
 }

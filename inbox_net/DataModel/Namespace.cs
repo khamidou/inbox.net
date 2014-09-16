@@ -29,5 +29,9 @@ namespace inbox_net.DataModel
         [JsonProperty("provider")]
         public string Provider { get; set; }
 
+        public override string ToString()
+        {
+            return Email_Address;
+        }
     }
 }

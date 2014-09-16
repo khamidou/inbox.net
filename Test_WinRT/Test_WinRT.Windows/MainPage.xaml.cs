@@ -35,7 +35,10 @@ namespace Test_WinRT
             InboxClient client = new InboxClient("http://inboxdev.cloudapp.net:5555/");
             Namespace ns = await client.GetFirstNamespace();
             client.Namespace = ns.Namespace_ID;
-            Namespace ns2 = await client.GetNamespace(client.Namespace);
+            List<Tag> tags = new List<Tag>(await client.GetTags());
+            //Tag tag = await client.GetTag("Test Tag");
+            Tag tag = tags.Where(t => t.Name == "TestTag").First();
+            Tag tag2 = await client.RenameCustomTag(tag.ID, "Other Test");
         }
 
 

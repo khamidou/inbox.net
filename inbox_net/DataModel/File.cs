@@ -35,6 +35,9 @@ namespace inbox_net.DataModel
         [JsonProperty("is_embedded")]
         public bool IsEmbeded { get; set; }
 
-
+        public override string ToString()
+        {
+            return FileName;
+        }
     }
 }

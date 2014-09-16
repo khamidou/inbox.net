@@ -44,5 +44,10 @@ namespace inbox_net.DataModel
         [JsonProperty("draft_ids")]
         public List<string> Drafts { get; set; }
 
+
+        public override string ToString()
+        {
+            return Subject;
+        }
     }
 }

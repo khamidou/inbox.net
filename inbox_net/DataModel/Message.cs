@@ -50,5 +50,9 @@ namespace inbox_net.DataModel
         [JsonProperty("body")]
         public string Body { get; set; }
 
+        public override string ToString()
+        {
+            return Subject;
+        }
     }
 }

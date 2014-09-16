@@ -23,5 +23,10 @@ namespace inbox_net.DataModel
         [JsonProperty("object")]
         public string Object { get; set; }
 
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
