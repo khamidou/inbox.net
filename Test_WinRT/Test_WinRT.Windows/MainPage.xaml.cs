@@ -36,9 +36,14 @@ namespace Test_WinRT
             Namespace ns = await client.GetFirstNamespace();
             client.Namespace = ns.Namespace_ID;
             List<Tag> tags = new List<Tag>(await client.GetTags());
-            //Tag tag = await client.GetTag("Test Tag");
-            Tag tag = tags.Where(t => t.Name == "TestTag").First();
-            Tag tag2 = await client.RenameCustomTag(tag.ID, "Other Test");
+            //Tag tag = await client.NewCustomTag("TestInboxApp");
+            //Tag tag = await client.GetTag("InboxApp");
+            Tag tag = tags.Where(t => t.Name == "TestInboxApp").First();
+            //Tag tag2 = await client.RenameCustomTag(tag.ID, "Other Test");
+            List<Thread> threads = new List<Thread>(await client.GetThreads(tag: CanonicalTags.Inbox));
+            string[] add_tags = { tag.Name };
+            string[] remove_tags = { threads[0].Tags[0].Name };
+            await client.UpdateThreadTags(threads[0].ID, add_tags);
         }
 
 
