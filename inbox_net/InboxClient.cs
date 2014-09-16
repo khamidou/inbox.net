@@ -52,7 +52,7 @@ namespace inbox_net
             List<Namespace> namespaces = new List<Namespace>();
             if (json != null)
             {
-                namespaces = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<List<Namespace>>(json));
+                namespaces = await DeserializeObjectAsync<List<Namespace>>(json);
             }
             return namespaces.First();
         }
@@ -63,7 +63,7 @@ namespace inbox_net
             Namespace ns = null;
             if (json != null)
             {
-                ns = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<Namespace>(json));
+                ns = await DeserializeObjectAsync<Namespace>(json);
             }
             return ns;
         }
@@ -80,7 +80,7 @@ namespace inbox_net
             IEnumerable<Tag> tags = null;
             if (json != null)
             {
-                tags = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<IEnumerable<Tag>>(json));
+                tags = await DeserializeObjectAsync<IEnumerable<Tag>>(json);
             }
             return tags;
         }
@@ -91,7 +91,7 @@ namespace inbox_net
             Tag tag = null;
             if (json != null)
             {
-                tag = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<Tag>(json));
+                tag = await DeserializeObjectAsync<Tag>(json);
             }
             return tag;
         }
@@ -104,7 +104,7 @@ namespace inbox_net
             Tag tag = null;
             if (json != null)
             {
-                tag = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<Tag>(json));
+                tag = await DeserializeObjectAsync<Tag>(json);
             }
             return tag;
         }
@@ -117,7 +117,7 @@ namespace inbox_net
             Tag tag = null;
             if (json != null)
             {
-                tag = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<Tag>(json));
+                tag = await DeserializeObjectAsync<Tag>(json);
             }
             return tag;
         }
@@ -133,7 +133,7 @@ namespace inbox_net
             Thread thread = null;
             if (json != null)
             {
-                thread = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<Thread>(json));
+                thread = await DeserializeObjectAsync<Thread>(json));
             }
             return thread;
         }
@@ -147,17 +147,22 @@ namespace inbox_net
             IEnumerable<Thread> threads = null;
             if (json != null)
             {
-                threads = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<IEnumerable<Thread>>(json));
+                threads = await DeserializeObjectAsync<IEnumerable<Thread>>(json);
             }
             return threads;
         }
 
-        public async Task UpdateThreadTags(string thread_id, string[] add_tags)
+        public async Task<Thread> UpdateThreadTags(string thread_id, string[] add_tags)
         {
             List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
             parameters.Add(new KeyValuePair<string, string>("add_tags", StringsToJsonArray(add_tags)));
             string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Thread, this.Namespace, thread_id)), GenerateRequestBody(parameters));
-            
+            Thread thread = null;
+            if (json != null)
+            {
+                thread = await DeserializeObjectAsync<Thread>(json);
+            }
+            return thread;
         }
 
        
@@ -341,6 +346,11 @@ namespace inbox_net
             sb.Remove(sb.Length - 1, 1);
             sb.Append("]");
             return sb.ToString();
+        }
+
+        private async Task<T> DeserializeObjectAsync<T>(string json)
+        {
+            return await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<T>(json));
         }
 
     }
