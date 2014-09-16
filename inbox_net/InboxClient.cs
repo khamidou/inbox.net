@@ -49,23 +49,13 @@ namespace inbox_net
         public async Task<Namespace> GetFirstNamespace()
         {
             string json = await HttpGet(GenerateUri(MethodURIs.Namespace));
-            List<Namespace> namespaces = new List<Namespace>();
-            if (json != null)
-            {
-                namespaces = await DeserializeObjectAsync<List<Namespace>>(json);
-            }
-            return namespaces.First();
+            return (await DeserializeObjectAsync<IEnumerable<Namespace>>(json)).First();
         }
 
         public async Task<Namespace> GetNamespace(string _namespace)
         {
             string json = await HttpGet(GenerateUri(MethodURIs.Namespace + _namespace));
-            Namespace ns = null;
-            if (json != null)
-            {
-                ns = await DeserializeObjectAsync<Namespace>(json);
-            }
-            return ns;
+            return await DeserializeObjectAsync<Namespace>(json);
         }
 
 
@@ -77,36 +67,21 @@ namespace inbox_net
         public async Task<IEnumerable<Tag>> GetTags()
         {
             string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Tags, this.Namespace)));
-            IEnumerable<Tag> tags = null;
-            if (json != null)
-            {
-                tags = await DeserializeObjectAsync<IEnumerable<Tag>>(json);
-            }
-            return tags;
+            return await DeserializeObjectAsync<IEnumerable<Tag>>(json);
         }
 
         public async Task<Tag> GetTag(string tagID)
         {
             string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Tags, this.Namespace) + tagID, null));
-            Tag tag = null;
-            if (json != null)
-            {
-                tag = await DeserializeObjectAsync<Tag>(json);
-            }
-            return tag;
+            return await DeserializeObjectAsync<Tag>(json);
         }
 
-        public async Task<Tag> NewCustomTag(string tagName)
+        public async Task<Tag> CreateCustomTag(string tagName)
         {
             List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
             parameters.Add(new KeyValuePair<string, string>("name", tagName));
             string json = await HttpPost(GenerateUri(string.Format(MethodURIs.Tags, this.Namespace)), GenerateRequestBody(parameters));
-            Tag tag = null;
-            if (json != null)
-            {
-                tag = await DeserializeObjectAsync<Tag>(json);
-            }
-            return tag;
+            return await DeserializeObjectAsync<Tag>(json);
         }
 
         public async Task<Tag> RenameCustomTag(string tagID, string newTagName)
@@ -114,12 +89,7 @@ namespace inbox_net
             List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
             parameters.Add(new KeyValuePair<string, string>("name", newTagName));
             string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Tags, this.Namespace) + tagID), GenerateRequestBody(parameters));
-            Tag tag = null;
-            if (json != null)
-            {
-                tag = await DeserializeObjectAsync<Tag>(json);
-            }
-            return tag;
+            return await DeserializeObjectAsync<Tag>(json);
         }
 
 #endregion
@@ -130,12 +100,7 @@ namespace inbox_net
         public async Task<Thread> GetThread(string thread_id)
         {
             string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Thread, this.Namespace, thread_id)));
-            Thread thread = null;
-            if (json != null)
-            {
-                thread = await DeserializeObjectAsync<Thread>(json));
-            }
-            return thread;
+            return await DeserializeObjectAsync<Thread>(json);
         }
 
         public async Task<IEnumerable<Thread>> GetThreads(string subject = null, string any_email = null, string to = null, string from = null, string cc = null,
@@ -144,27 +109,37 @@ namespace inbox_net
         {
             List<KeyValuePair<string, string>> parameters = ValidateGetThreadsParams(subject, any_email, to, from, cc, bcc, tag, filename, limit, offset, last_message_before, last_message_after, started_before, started_after);
             string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Threads, this.Namespace), parameters));
-            IEnumerable<Thread> threads = null;
-            if (json != null)
-            {
-                threads = await DeserializeObjectAsync<IEnumerable<Thread>>(json);
-            }
-            return threads;
+            return await DeserializeObjectAsync<IEnumerable<Thread>>(json);
         }
 
         public async Task<Thread> UpdateThreadTags(string thread_id, string[] add_tags)
         {
             List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
             parameters.Add(new KeyValuePair<string, string>("add_tags", StringsToJsonArray(add_tags)));
-            string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Thread, this.Namespace, thread_id)), GenerateRequestBody(parameters));
-            Thread thread = null;
-            if (json != null)
-            {
-                thread = await DeserializeObjectAsync<Thread>(json);
-            }
-            return thread;
+            return await SendUpdateTagsRequest(thread_id, parameters);
         }
 
+        public async Task<Thread> MarkThreadAsRead(string thread_id)
+        {
+            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+            string[] remove_tags = { "unread" };
+            parameters.Add(new KeyValuePair<string, string>("remove_tags", StringsToJsonArray(remove_tags)));
+            return await SendUpdateTagsRequest(thread_id, parameters);
+        }
+
+        public async Task<Thread> MarkThreadAsUnread(string thread_id)
+        {
+            List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+            string[] add_tags = { "unread" };
+            parameters.Add(new KeyValuePair<string, string>("add_tags", StringsToJsonArray(add_tags)));
+            return await SendUpdateTagsRequest(thread_id, parameters);
+        }
+
+        private async Task<Thread> SendUpdateTagsRequest(string thread_id, List<KeyValuePair<string,string>> parameters)
+        {
+            string json = await HttpPut(GenerateUri(string.Format(MethodURIs.Thread, this.Namespace, thread_id)), GenerateRequestBody(parameters));
+            return await DeserializeObjectAsync<Thread>(json);
+        }
        
 
 
@@ -350,7 +325,11 @@ namespace inbox_net
 
         private async Task<T> DeserializeObjectAsync<T>(string json)
         {
-            return await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<T>(json));
+            if (json != null)
+            {
+                return await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<T>(json));
+            }
+            return default(T);
         }
 
     }
