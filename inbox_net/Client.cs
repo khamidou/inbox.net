@@ -16,7 +16,6 @@ namespace inbox_net
         private string access_token_url = string.Empty;
         private string auth_token = "";
         private HttpClient client;
-        private List<KeyValuePair<string, string>> session_headers;
         private string access_token;
         private string app_secret;
         private string app_id;
