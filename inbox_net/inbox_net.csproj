@@ -35,6 +35,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Client.cs" />
     <Compile Include="DataModel\CanonicalTags.cs" />
     <Compile Include="DataModel\Draft.cs" />
     <Compile Include="DataModel\File.cs" />
@@ -47,6 +48,8 @@
     <Compile Include="DataModel\Thread.cs" />
     <Compile Include="InboxClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StringConstants.cs" />
+    <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json">

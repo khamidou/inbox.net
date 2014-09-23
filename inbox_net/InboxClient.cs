@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace inbox_net
 {
-    public class InboxClient
+    public class InboxClient : inbox_net.IInboxClient
     {
         private string Inbox_API_Url = "https://slack.com/api/";
 
@@ -61,7 +61,6 @@ namespace inbox_net
 
 #endregion
 
-
 #region Tags
 
         public async Task<IEnumerable<Tag>> GetTags()
@@ -93,7 +92,6 @@ namespace inbox_net
         }
 
 #endregion
-
 
 #region Threads
 
@@ -188,7 +186,26 @@ namespace inbox_net
 
 #endregion
 
-#region HttpHelperMethods
+#region Drafts
+
+        public async Task<IEnumerable<Draft>> GetDrafts(string thread_id = null, string subject = null, string any_email = null, string to = null, string from = null, string cc = null,
+                                                        string bcc = null, string tag = null, string filename = null, int limit = 100, int offset = 0, int last_message_before = 0,
+                                                        int last_message_after = 0, int started_before = 0, int started_after = 0)
+        {
+            List<KeyValuePair<string, string>> parameters = ValidateGetMessagesParams(thread_id, subject, any_email, to, from, cc, bcc, tag, filename, limit, offset, last_message_before, last_message_after, started_before, started_after);
+            string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Drafts, this.Namespace), parameters));
+            return await DeserializeObjectAsync<IEnumerable<Draft>>(json);
+        }
+
+        public async Task<Draft> GetDraft(string draft_id)
+        {
+            string json = await HttpGet(GenerateUri(string.Format(MethodURIs.Draft, this.Namespace, draft_id)));
+            return await DeserializeObjectAsync<Draft>(json);
+        }
+
+#endregion
+
+        #region HttpHelperMethods
 
         private async Task<string> HttpGet(string callUri)
         {
