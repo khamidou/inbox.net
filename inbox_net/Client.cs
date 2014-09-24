@@ -5,6 +5,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using inbox_net.DataModel;
+using Newtonsoft.Json;
+using System.Net;
 
 namespace inbox_net
 {
@@ -35,8 +38,10 @@ namespace inbox_net
             this.access_token_url = AUTH_SERVER + "/oauth/token";
             this.client = new HttpClient();
             this.client.DefaultRequestHeaders.Add("X-Inbox-API-Wrapper", "dotNET");
-
+            this.Namespaces = new RestfulModelCollection<Namespace>(this);
         }
+
+        public RestfulModelCollection<Namespace> Namespaces { get; set; }
 
         public string Access_Token
         {
@@ -56,7 +61,7 @@ namespace inbox_net
 
         public string authenticationUrl(string redirect_uri, string login_hint = "")
         {
-            Dictionary<string, string> args = new Dictionary<string, string>();
+            Dictionary<string, object> args = new Dictionary<string, object>();
             args.Add("redirect_uri", redirect_uri);
             args.Add("client_id", this.app_id);
             args.Add("response_type", "code");
@@ -88,8 +93,122 @@ namespace inbox_net
             return this.auth_token;
         }
 
+        private async Task<HttpResponseMessage> ValidateResponse(HttpResponseMessage response)
+        {
+            Dictionary<HttpStatusCode, string> status_code_to_exc = new Dictionary<HttpStatusCode, string>();
+            status_code_to_exc.Add(HttpStatusCode.BadRequest, "APIError");
+            status_code_to_exc.Add(HttpStatusCode.NotFound, "NotFoundError");
+            status_code_to_exc.Add(HttpStatusCode.Conflict, "ConflictError");
+            var request = response.RequestMessage;
+            string url = request.RequestUri.ToString();
+            var status_code = response.StatusCode;
+            string data = await response.Content.ReadAsStringAsync();
+            JObject obj = null;
+            try
+            {
+                obj = data != null ? JObject.Parse(data) : null;
+            }
+            catch (Exception)
+            {
+
+            }
+
+            if (status_code == HttpStatusCode.OK)
+            {
+                return response;
+            }
+            else if (status_code == HttpStatusCode.Unauthorized)
+            {
+                throw new Exception("Not Authorized");
+            }
+            else if (status_code == HttpStatusCode.BadRequest || status_code == HttpStatusCode.NotFound || status_code == HttpStatusCode.Conflict)
+            {
+                string errorMessage = status_code_to_exc[status_code];
+                try
+                {
+                    JObject responseJSON = JObject.Parse(data);
+                    if (responseJSON["message"] != null)
+                    {
+                        throw new InboxException(url, status_code, data, responseJSON["message"].ToString());
+                    }
+                    else
+                    {
+                        throw new InboxException(url, status_code, data, "N/A");
+                    }
+                }
+                catch (Exception)
+                {
+                    throw new InboxException(url, status_code, data, "Malformed");
+                }
+                throw new Exception("Error - Your fault...probably");
+            }
+            else if (status_code == HttpStatusCode.InternalServerError)
+            {
+                throw new InboxException(url, status_code, data, "ServerError");
+            }
+            else
+            {
+                throw new InboxException(url, status_code, data, "Unknown status code");
+            }
+        }
+
+        public async Task<IEnumerable<T>> GetResources<T>(string _namespace, RestfulModelCollection<T> cls, Dictionary<string, object> filters)
+        {
+            string prefix = string.Format("/n/{0}", _namespace != null ? _namespace : "");
+            string url = string.Format("{0}{1}/{2}", this.api_server, prefix, cls.CollectionName);
+            url = Utilities.Url_Concat(url, filters);
+
+            string json = await (await ValidateResponse(await client.GetAsync(url))).Content.ReadAsStringAsync();
+            return await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<IEnumerable<T>>(json));
+        }
+
+        public async Task<string> GetRawResource(string _namespace, string objectType, string id, Dictionary<string, object> filters)
+        {
+            // Get an indivitual REST resource
+            string extra = null;
+            if (filters["extra"] != null)
+            {
+                extra = filters["extra"].ToString();
+                filters.Remove("extra");
+            }
+            string prefix = string.Format("/n/{0}", _namespace != null ? _namespace : "");
+            string postfix = string.Format("/{0}", extra != null ? extra : "");
+            string url = string.Format("{0}{1}/{2}/{3}{4}", this.api_server, prefix, objectType, id, postfix);
+            url = Utilities.Url_Concat(url, filters);
+            return await (await ValidateResponse(await client.GetAsync(url))).Content.ReadAsStringAsync();
+        }
+
+        public async Task<T> GetResource<T>(string _namespace, string objectType, string id, Dictionary<string, object> filters)
+        {
 
 
-        
+            return default(T);
+        }
+
+
+
+
+
+        internal T CreateResource<T>(Namespace p1, object p2, string p3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal T UpdateResource<T>(Namespace _namespace, object cls, string id, string json)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
+        internal object UpdateResource(Namespace p1, Type type, string p2, string p3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal object CreateResource(Namespace p1, Type type, string p2)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

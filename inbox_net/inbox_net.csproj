@@ -39,14 +39,17 @@
     <Compile Include="DataModel\CanonicalTags.cs" />
     <Compile Include="DataModel\Draft.cs" />
     <Compile Include="DataModel\File.cs" />
+    <Compile Include="DataModel\InboxAPIObject.cs" />
     <Compile Include="DataModel\Message.cs" />
     <Compile Include="DataModel\MethodURIs.cs" />
     <Compile Include="DataModel\Namespace.cs" />
     <Compile Include="DataModel\Participant.cs" />
     <Compile Include="DataModel\Post.cs" />
+    <Compile Include="DataModel\RestfulModelCollection.cs" />
     <Compile Include="DataModel\Tag.cs" />
     <Compile Include="DataModel\Thread.cs" />
     <Compile Include="InboxClient.cs" />
+    <Compile Include="InboxException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringConstants.cs" />
     <Compile Include="Utilities.cs" />

@@ -9,7 +9,7 @@ namespace inbox_net
 {
     public static class Utilities
     {
-        public static string Url_Concat(string url, Dictionary<string, string> args, string fragments = null)
+        public static string Url_Concat(string url, Dictionary<string, object> args, string fragments = null)
         {
             if (args == null && fragments == null)
             {
@@ -35,7 +35,7 @@ namespace inbox_net
                     {
                         args_tail += url.Contains("?") ? "&" : "?";
                     }
-                    args_tail += string.Format("{0}={1}", item.Key, WebUtility.UrlEncode(item.Value));
+                    args_tail += string.Format("{0}={1}", item.Key, WebUtility.UrlEncode(item.Value.ToString()));
                 }
             }
 
